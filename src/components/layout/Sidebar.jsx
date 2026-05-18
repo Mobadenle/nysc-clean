@@ -9,8 +9,8 @@ const SECTIONS       = ['main', 'account', 'ambassador']
 const SECTION_LABELS = { main: 'Platform', account: 'My Account', ambassador: 'Ambassador' }
 
 function getInitials(name) {
-  if (!name) return 'NH'
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+  if (!name || !name.trim()) return 'NH'
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -21,8 +21,14 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const go = (path) => { navigate(path); onClose() }
 
+  // Robust display name — never shows "Loading..."
+  const displayName = currentUser?.full_name
+    || currentUser?.username
+    || currentUser?.email?.split('@')[0]
+    || 'NYSC Member'
+
   const avatarUser = {
-    initials: getInitials(currentUser?.full_name),
+    initials: getInitials(displayName),
     color:    '#2F5BE8',
   }
 
@@ -67,7 +73,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <Avatar user={avatarUser} size={32} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="truncate" style={{ fontSize: 13, fontWeight: 600 }}>
-                {currentUser?.full_name ?? 'Loading...'}
+                {displayName}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 Trust: {currentUser?.trust_score ?? 0}
