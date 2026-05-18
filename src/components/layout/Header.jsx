@@ -7,8 +7,8 @@ import Icon                 from '../ui/Icon'
 import Button               from '../ui/Button'
 
 function getInitials(name) {
-  if (!name) return 'NH'
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+  if (!name || !name.trim()) return 'NH'
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
 export default function Header() {
@@ -20,8 +20,15 @@ export default function Header() {
   const pageKey = pathname.split('/')[1] || 'dashboard'
   const title   = PAGE_TITLES[pageKey] ?? 'NYSC HelpDesk'
 
+  const displayName = currentUser?.full_name
+    || currentUser?.username
+    || currentUser?.email?.split('@')[0]
+    || 'User'
+
+  const firstName = displayName.split(' ')[0]
+
   const avatarUser = {
-    initials: getInitials(currentUser?.full_name),
+    initials: getInitials(displayName),
     color:    '#2F5BE8',
   }
 
@@ -62,9 +69,7 @@ export default function Header() {
           onClick={() => navigate('/profile')}
         >
           <Avatar user={avatarUser} size={26} />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>
-            {currentUser?.full_name?.split(' ')[0] ?? '...'}
-          </span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{firstName}</span>
         </div>
       </div>
     </header>
