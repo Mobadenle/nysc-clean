@@ -6,36 +6,48 @@ import ActivityFeed       from '../../components/dashboard/ActivityFeed'
 import LoadingSpinner     from '../../components/ui/LoadingSpinner'
 
 function getInitials(name) {
-  if (!name) return 'NH'
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+  if (!name || !name.trim()) return 'NH'
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
 export default function ProfilePage() {
-  const { currentUser }                      = useAuth()
-  const { data: trustEvents = [], isLoading } = useTrustEvents(currentUser?.id)
+  const { currentUser, isLoading: authLoading } = useAuth()
+  const { data: trustEvents = [], isLoading: eventsLoading } = useTrustEvents(currentUser?.id)
 
-  if (!currentUser) return (
+  // Still resolving the auth session
+  if (authLoading) return (
     <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
       <LoadingSpinner size={32} />
     </div>
   )
 
+  // Auth resolved but no user (shouldn't happen in authenticated route, but guard anyway)
+  if (!currentUser) return (
+    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Profile unavailable. Try refreshing.</p>
+    </div>
+  )
+
+  const displayName = currentUser.full_name || currentUser.username || currentUser.email || 'NYSC Member'
+
   const userForCard = {
-    name:        currentUser.full_name,
-    initials:    getInitials(currentUser.full_name),
+    name:        displayName,
+    initials:    getInitials(displayName),
     color:       '#2F5BE8',
-    trust:       currentUser.trust_score,
+    trust:       currentUser.trust_score ?? 0,
     ambassador:  ['ambassador', 'moderator', 'admin'].includes(currentUser.role),
     solvedCount: trustEvents.filter(e => e.event_type === 'issue_marked_solved').length,
     state:       currentUser.state,
     batch:       currentUser.batch,
   }
 
-  const userForTrust = { trust: currentUser.trust_score }
+  const userForTrust = { trust: currentUser.trust_score ?? 0 }
 
   const activities = trustEvents.slice(0, 6).map(ev => ({
     text: ev.reason || ev.event_type.replace(/_/g, ' '),
-    time: new Date(ev.created_at).toLocaleString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+    time: new Date(ev.created_at).toLocaleString('en-NG', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    }),
     icon: ev.delta >= 0 ? '⭐' : '⚠️',
   }))
 
@@ -46,8 +58,10 @@ export default function ProfilePage() {
         <TrustBreakdown user={userForTrust} />
         <div className="card">
           <h3 style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Recent Activity</h3>
-          {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><LoadingSpinner size={20} /></div>
+          {eventsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+              <LoadingSpinner size={20} />
+            </div>
           ) : (
             <ActivityFeed activities={activities.length ? activities : undefined} />
           )}
